@@ -1,22 +1,12 @@
-# Stage 1: Build using Maven 3.9.3 with JDK 21
-FROM maven:3.9.3-jdk-21 AS build
-WORKDIR /app
-
-# Copy pom.xml first for caching
-COPY pom.xml .
-# Copy source code
-COPY src ./src
-
-# Build the project
-RUN mvn clean package -DskipTests
-
-# Stage 2: Run using JDK 21
+# Use JDK 21 to run the backend
 FROM eclipse-temurin:21-jdk-jammy
 WORKDIR /app
 
-# Copy built JAR
-COPY --from=build /app/target/*.jar app.jar
+# Copy the JAR you built locally
+COPY target/Standard-ecommerce-backend-0.0.1-SNAPSHOT.jar app.jar
 
+# Expose backend port
 EXPOSE 8080
 
+# Run the Spring Boot app
 ENTRYPOINT ["java", "-jar", "app.jar"]
