@@ -23,9 +23,14 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
-        boolean authenticated = adminService.checkLogin(request.getUsername(), request.getPassword());
+
+        boolean authenticated = adminService.checkLogin(
+                request.getUsername(),
+                request.getPassword()
+        );
+
         if (authenticated) {
-            String token = jwtUtil.generateToken(request.getUsername());
+            String token = jwtUtil.generateToken(request.getUsername()); // ✅ ONE PARAM ONLY
             return ResponseEntity.ok(token);
         } else {
             return ResponseEntity.status(401).body("Invalid username or password");

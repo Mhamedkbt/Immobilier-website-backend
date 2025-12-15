@@ -13,4 +13,5 @@ public class AppConfig {
     public String jwtSecret() {
         return dotenv.get("SECRET_KEY");
     }
+
 }

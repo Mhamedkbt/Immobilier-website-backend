@@ -4,8 +4,8 @@ import com.ecommerce.backend.entity.Admin;
 import com.ecommerce.backend.repository.AdminRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import java.util.Optional;
 
+import java.util.Optional;
 
 @Service
 public class AdminServiceImpl implements AdminService {
@@ -33,12 +33,14 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
-    public boolean checkLogin(String username, String password) {
-        Optional<Admin> admin = adminRepository.findByUsername(username);
-        return admin.map(a -> a.getPassword().equals(password)).orElse(false);
+    public boolean validatePassword(Admin admin, String password) {
+        if (admin == null || password == null) return false;
+        return admin.getPassword().equals(password);
     }
 
+    @Override
+    public boolean checkLogin(String username, String password) {
+        Optional<Admin> admin = adminRepository.findByUsername(username);
+        return admin.map(a -> validatePassword(a, password)).orElse(false);
+    }
 }
-
-
-

@@ -17,6 +17,7 @@ public class StandardEcommerceBackendApplication {
         System.setProperty("DB_USERNAME", dotenv.get("DB_USERNAME"));
         System.setProperty("DB_PASSWORD", dotenv.get("DB_PASSWORD"));
         System.setProperty("SECRET_KEY", dotenv.get("SECRET_KEY"));
+        System.setProperty("FRONTEND_URL", dotenv.get("FRONTEND_URL"));
 
 
         SpringApplication.run(StandardEcommerceBackendApplication.class, args);

@@ -5,10 +5,15 @@ import java.util.Optional;
 
 public interface AdminService {
 
-    Admin saveAdmin(Admin admin);                 // Save a new admin
-    Optional<Admin> getAdminById(Long id);       // Get admin by ID
-    Optional<Admin> getAdminByUsername(String username); // Get admin by username
+    Admin saveAdmin(Admin admin);
 
-    // New method for login
+    Optional<Admin> getAdminById(Long id);
+
+    Optional<Admin> getAdminByUsername(String username);
+
+    // Validate if a given password matches the admin's password
+    boolean validatePassword(Admin admin, String password);
+
+    // Check login credentials
     boolean checkLogin(String username, String password);
 }
