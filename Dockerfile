@@ -1,25 +1,21 @@
-# Stage 1: Build the application using Maven + JDK 21
+# Stage 1: Build
 FROM maven:3.9.11-eclipse-temurin-21 AS build
 WORKDIR /app
 
-# Copy pom.xml first to cache dependencies
 COPY pom.xml .
-
-# Copy source code
 COPY src ./src
 
-# Build the Spring Boot application without running tests
 RUN mvn clean package -DskipTests
 
-# Stage 2: Run the application using JDK 21
+# Stage 2: Run
 FROM eclipse-temurin:21-jdk-jammy
 WORKDIR /app
 
-# Copy the built JAR from the build stage
+# Copy built JAR
 COPY --from=build /app/target/*.jar app.jar
 
-# Expose the port your Spring Boot app listens on
-EXPOSE 8080
+# Copy .env file
+COPY .env .env
 
-# Run the Spring Boot app
+EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]

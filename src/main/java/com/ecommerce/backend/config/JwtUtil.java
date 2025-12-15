@@ -21,13 +21,16 @@ public class JwtUtil {
 
     @PostConstruct
     public void init() {
+        if (secretKey == null || secretKey.isBlank()) {
+            throw new IllegalStateException("SECRET_KEY is missing!");
+        }
         key = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
     }
 
     public String generateToken(String username) {
         return Jwts.builder()
                 .setSubject(username)
-                .claim("role", "ADMIN") // ✅ REQUIRED BY SECURITY
+                .claim("role", "ADMIN")
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_MS))
                 .signWith(key, SignatureAlgorithm.HS256)
@@ -54,7 +57,7 @@ public class JwtUtil {
         try {
             getAllClaims(token);
             return true;
-        } catch (Exception e) {
+        } catch (JwtException | IllegalArgumentException e) {
             return false;
         }
     }

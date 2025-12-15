@@ -5,6 +5,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -23,6 +24,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
     private final AdminService adminService;
 
+    @Autowired
     public JwtAuthenticationFilter(JwtUtil jwtUtil, AdminService adminService) {
         this.jwtUtil = jwtUtil;
         this.adminService = adminService;
@@ -36,25 +38,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String token = null;
 
-        // ✅ 1. Try reading token from Authorization header
+        // 1️⃣ Try reading token from Authorization header
         String authHeader = request.getHeader("Authorization");
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             token = authHeader.substring(7);
         }
 
-        // ✅ 2. Fallback: Try reading token from URL parameter (for multipart/form-data)
+        // 2️⃣ Fallback: Try reading token from URL parameter (for multipart/form-data)
         if (token == null || token.isEmpty()) {
             token = request.getParameter("token");
         }
 
-        // ✅ 3. Validate token and authenticate
+        // 3️⃣ Validate token and authenticate
         if (token != null && jwtUtil.validateToken(token)) {
-
             String username = jwtUtil.getUsernameFromToken(token);
 
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-                // ✅ Ensure admin exists in DB
+                // Ensure admin exists in DB
                 if (adminService.getAdminByUsername(username).isPresent()) {
 
                     UsernamePasswordAuthenticationToken authentication =
@@ -73,7 +74,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         }
 
-        // ✅ 4. Continue filter chain
+        // 4️⃣ Continue filter chain
         filterChain.doFilter(request, response);
     }
 }
