@@ -31,13 +31,9 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler("/uploads/**")
-                // 🎯 FIX: Changed "file:uploads/" to "file:./uploads/"
-                // and ensured it ends with a slash for clearer directory mapping.
-                // The "./" prefix ensures the path is correctly resolved relative
-                // to the application's root directory, supporting the "uploads/categories/"
-                // path used in the CategoryService.
+
                 .addResourceLocations("file:./uploads/");
     }
 
-    
+
 }
