@@ -18,7 +18,6 @@ public class JwtUtil {
 
     private Key key;
     private static final long EXPIRATION_MS = 2 * 60 * 60 * 1000;
-
     @PostConstruct
     public void init() {
         if (secretKey == null || secretKey.isBlank()) {
