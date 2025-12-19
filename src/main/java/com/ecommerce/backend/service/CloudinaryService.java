@@ -16,12 +16,12 @@ public class CloudinaryService {
     private Cloudinary cloudinary;
 
     public String uploadImage(MultipartFile file, String folder) throws IOException {
-        // Using getInputStream() instead of getBytes() to save RAM
+        // FIX: Switch back to getBytes() to fix the "Unrecognized file parameter" error
         Map<?, ?> uploadResult = cloudinary.uploader().upload(
-                file.getInputStream(),
+                file.getBytes(),
                 ObjectUtils.asMap(
                         "folder", folder,
-                        "resource_type", "auto" // Detects if it's jpg, png, etc.
+                        "resource_type", "auto"
                 )
         );
         return uploadResult.get("secure_url").toString();
