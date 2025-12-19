@@ -113,12 +113,7 @@ public class ProductController {
         product.setDescription(desc);
 
         // Update image list
-        if (product.getImages() == null) {
-            product.setImages(new ArrayList<>());
-        } else {
-            product.getImages().clear();
-        }
-        product.getImages().addAll(finalImageList);
+        product.setImages(new ArrayList<>(finalImageList));
 
         return productRepository.saveAndFlush(product);
     }
