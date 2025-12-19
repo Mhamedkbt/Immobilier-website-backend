@@ -43,13 +43,8 @@ public class ProductController {
             @RequestParam(value = "existingImages", required = false) String existingImagesJson,
             @RequestParam(value = "images", required = false) List<MultipartFile> images
     ) {
-        try {
-            Product product = new Product();
-            return saveProductData(product, name, price, previousPrice, isAvailableStr, onPromotionStr, category, description, existingImagesJson, images);
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("Create Failed: " + e.getMessage());
-        }
+        Product product = new Product();
+        return processAndSave(product, name, price, previousPrice, isAvailableStr, onPromotionStr, category, description, existingImagesJson, images);
     }
 
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -65,50 +60,50 @@ public class ProductController {
             @RequestParam(value = "existingImages", required = false) String existingImagesJson,
             @RequestParam(value = "images", required = false) List<MultipartFile> newImages
     ) {
-        try {
-            Product product = productRepository.findById(id)
-                    .orElseThrow(() -> new RuntimeException("Product not found"));
-            return saveProductData(product, name, price, previousPrice, isAvailableStr, onPromotionStr, category, description, existingImagesJson, newImages);
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("Update Failed: " + e.getMessage());
-        }
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Product not found"));
+        return processAndSave(product, name, price, previousPrice, isAvailableStr, onPromotionStr, category, description, existingImagesJson, newImages);
     }
 
-    // Helper method to avoid duplicating logic
-    private Product saveProductData(Product product, String name, Double price, double prevPrice, String isAvail, String onPromo, String cat, String desc, String existJson, List<MultipartFile> files) throws Exception {
+    private Product processAndSave(Product product, String name, Double price, double prevPrice, String isAvail, String onPromo, String cat, String desc, String existJson, List<MultipartFile> files) {
+        try {
+            List<String> finalImageList = new ArrayList<>();
 
-        // 1. Upload to Cloudinary FIRST (Outside of any DB logic)
-        List<String> finalImageList = new ArrayList<>();
-        if (existJson != null && !existJson.isBlank() && !existJson.equals("[]")) {
-            finalImageList.addAll(objectMapper.readValue(existJson, new TypeReference<List<String>>() {}));
+            // 1. Parse Existing Images safely
+            if (existJson != null && !existJson.isBlank() && !existJson.equals("null") && !existJson.equals("[]")) {
+                List<String> existing = objectMapper.readValue(existJson, new TypeReference<List<String>>() {});
+                finalImageList.addAll(existing);
+            }
+
+            // 2. Upload New Images (Parallel processing for speed)
+            if (files != null && !files.isEmpty()) {
+                List<String> newUrls = files.parallelStream()
+                        .filter(file -> file != null && !file.isEmpty())
+                        .map(file -> {
+                            try {
+                                return cloudinaryService.uploadImage(file, "products");
+                            } catch (Exception e) {
+                                throw new RuntimeException("Cloudinary upload failed: " + e.getMessage());
+                            }
+                        }).collect(Collectors.toList());
+                finalImageList.addAll(newUrls);
+            }
+
+            // 3. Set Product Data
+            product.setName(name);
+            product.setPrice(price);
+            product.setPreviousPrice(prevPrice);
+            product.setAvailable(Boolean.parseBoolean(isAvail));
+            product.setOnPromotion(Boolean.parseBoolean(onPromo));
+            product.setCategory(cat);
+            product.setDescription(desc);
+            product.setImages(finalImageList);
+
+            return productRepository.save(product);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Server Error: " + e.getMessage());
         }
-
-        if (files != null && !files.isEmpty()) {
-            // Parallel upload to Cloudinary
-            List<String> newUrls = files.parallelStream()
-                    .filter(file -> !file.isEmpty())
-                    .map(file -> {
-                        try {
-                            return cloudinaryService.uploadImage(file, "products");
-                        } catch (Exception e) {
-                            throw new RuntimeException("Cloudinary upload failed", e);
-                        }
-                    }).collect(Collectors.toList());
-            finalImageList.addAll(newUrls);
-        }
-
-        // 2. ONLY NOW update the product object and save to DB
-        product.setName(name);
-        product.setPrice(price);
-        product.setPreviousPrice(prevPrice);
-        product.setAvailable(Boolean.parseBoolean(isAvail));
-        product.setOnPromotion(Boolean.parseBoolean(onPromo));
-        product.setCategory(cat);
-        product.setDescription(desc);
-        product.setImages(finalImageList);
-
-        return productRepository.save(product);
     }
 
     @DeleteMapping("/{id}")
