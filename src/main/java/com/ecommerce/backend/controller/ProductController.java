@@ -77,6 +77,28 @@ public class ProductController {
 
     // Helper method to avoid duplicating logic
     private Product saveProductData(Product product, String name, Double price, double prevPrice, String isAvail, String onPromo, String cat, String desc, String existJson, List<MultipartFile> files) throws Exception {
+
+        // 1. Upload to Cloudinary FIRST (Outside of any DB logic)
+        List<String> finalImageList = new ArrayList<>();
+        if (existJson != null && !existJson.isBlank() && !existJson.equals("[]")) {
+            finalImageList.addAll(objectMapper.readValue(existJson, new TypeReference<List<String>>() {}));
+        }
+
+        if (files != null && !files.isEmpty()) {
+            // Parallel upload to Cloudinary
+            List<String> newUrls = files.parallelStream()
+                    .filter(file -> !file.isEmpty())
+                    .map(file -> {
+                        try {
+                            return cloudinaryService.uploadImage(file, "products");
+                        } catch (Exception e) {
+                            throw new RuntimeException("Cloudinary upload failed", e);
+                        }
+                    }).collect(Collectors.toList());
+            finalImageList.addAll(newUrls);
+        }
+
+        // 2. ONLY NOW update the product object and save to DB
         product.setName(name);
         product.setPrice(price);
         product.setPreviousPrice(prevPrice);
@@ -84,29 +106,8 @@ public class ProductController {
         product.setOnPromotion(Boolean.parseBoolean(onPromo));
         product.setCategory(cat);
         product.setDescription(desc);
-
-        List<String> finalImageList = new ArrayList<>();
-
-        // Handle existing Cloudinary URLs
-        if (existJson != null && !existJson.isBlank() && !existJson.equals("[]")) {
-            finalImageList.addAll(objectMapper.readValue(existJson, new TypeReference<List<String>>() {}));
-        }
-
-        // Handle New Uploads in Parallel
-        if (files != null && !files.isEmpty()) {
-            List<String> newUrls = files.parallelStream()
-                    .filter(file -> !file.isEmpty())
-                    .map(file -> {
-                        try {
-                            return cloudinaryService.uploadImage(file, "products");
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
-                        }
-                    }).collect(Collectors.toList());
-            finalImageList.addAll(newUrls);
-        }
-
         product.setImages(finalImageList);
+
         return productRepository.save(product);
     }
 
