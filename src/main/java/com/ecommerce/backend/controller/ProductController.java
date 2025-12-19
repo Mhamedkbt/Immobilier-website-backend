@@ -7,13 +7,12 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Transactional; // Crucial for Updates
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/products")
@@ -33,6 +32,7 @@ public class ProductController {
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Transactional
     public Product createProduct(
             @RequestParam("name") String name,
             @RequestParam("price") Double price,
@@ -44,11 +44,17 @@ public class ProductController {
             @RequestParam(value = "existingImages", required = false) String existingImagesJson,
             @RequestParam(value = "images", required = false) List<MultipartFile> images
     ) {
-        Product product = new Product();
-        return processAndSave(product, name, price, previousPrice, isAvailableStr, onPromotionStr, category, description, existingImagesJson, images);
+        try {
+            Product product = new Product();
+            return saveProductData(product, name, price, previousPrice, isAvailableStr, onPromotionStr, category, description, existingImagesJson, images);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Create Failed: " + e.getMessage());
+        }
     }
 
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Transactional
     public Product updateProduct(
             @PathVariable Long id,
             @RequestParam("name") String name,
@@ -61,48 +67,47 @@ public class ProductController {
             @RequestParam(value = "existingImages", required = false) String existingImagesJson,
             @RequestParam(value = "images", required = false) List<MultipartFile> newImages
     ) {
-        Product product = productRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Product not found"));
-        return processAndSave(product, name, price, previousPrice, isAvailableStr, onPromotionStr, category, description, existingImagesJson, newImages);
-    }
-
-    @Transactional // Added: Ensures data integrity
-    protected Product processAndSave(Product product, String name, Double price, double prevPrice, String isAvail, String onPromo, String cat, String desc, String existJson, List<MultipartFile> files) {
         try {
-            List<String> finalImageList = new ArrayList<>();
-
-            if (existJson != null && !existJson.isBlank() && !existJson.equals("null") && !existJson.equals("[]")) {
-                List<String> existing = objectMapper.readValue(existJson, new TypeReference<List<String>>() {});
-                finalImageList.addAll(existing);
-            }
-
-            if (files != null && !files.isEmpty()) {
-                List<String> newUrls = files.parallelStream()
-                        .filter(file -> file != null && !file.isEmpty())
-                        .map(file -> {
-                            try {
-                                return cloudinaryService.uploadImage(file, "products");
-                            } catch (Exception e) {
-                                throw new RuntimeException("Cloudinary upload failed: " + e.getMessage());
-                            }
-                        }).collect(Collectors.toList());
-                finalImageList.addAll(newUrls);
-            }
-
-            product.setName(name);
-            product.setPrice(price);
-            product.setPreviousPrice(prevPrice);
-            product.setAvailable(Boolean.parseBoolean(isAvail));
-            product.setOnPromotion(Boolean.parseBoolean(onPromo));
-            product.setCategory(cat);
-            product.setDescription(desc);
-            product.setImages(finalImageList);
-
-            return productRepository.save(product);
+            Product product = productRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Product not found"));
+            return saveProductData(product, name, price, previousPrice, isAvailableStr, onPromotionStr, category, description, existingImagesJson, newImages);
         } catch (Exception e) {
             e.printStackTrace();
-            throw new RuntimeException("Server Error: " + e.getMessage());
+            throw new RuntimeException("Update Failed: " + e.getMessage());
         }
+    }
+
+    private Product saveProductData(Product product, String name, Double price, double prevPrice, String isAvail, String onPromo, String cat, String desc, String existJson, List<MultipartFile> files) throws Exception {
+
+        List<String> finalImageList = new ArrayList<>();
+
+        // 1. Handle existing images string
+        if (existJson != null && !existJson.isBlank() && !existJson.equals("[]") && !existJson.equals("null")) {
+            List<String> existing = objectMapper.readValue(existJson, new TypeReference<List<String>>() {});
+            finalImageList.addAll(existing);
+        }
+
+        // 2. Upload new images one by one (Safer for database connections)
+        if (files != null && !files.isEmpty()) {
+            for (MultipartFile file : files) {
+                if (file != null && !file.isEmpty()) {
+                    String url = cloudinaryService.uploadImage(file, "products");
+                    finalImageList.add(url);
+                }
+            }
+        }
+
+        // 3. Map values to your Entity
+        product.setName(name);
+        product.setPrice(price);
+        product.setPreviousPrice(prevPrice);
+        product.setAvailable(Boolean.parseBoolean(isAvail)); // Maps to your isAvailable
+        product.setOnPromotion(Boolean.parseBoolean(onPromo));
+        product.setCategory(cat);
+        product.setDescription(desc);
+        product.setImages(finalImageList);
+
+        return productRepository.save(product);
     }
 
     @DeleteMapping("/{id}")
