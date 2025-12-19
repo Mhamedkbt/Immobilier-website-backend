@@ -7,7 +7,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.transaction.annotation.Transactional; // Crucial for Updates
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -48,7 +48,6 @@ public class ProductController {
             Product product = new Product();
             return saveProductData(product, name, price, previousPrice, isAvailableStr, onPromotionStr, category, description, existingImagesJson, images);
         } catch (Exception e) {
-            e.printStackTrace();
             throw new RuntimeException("Create Failed: " + e.getMessage());
         }
     }
@@ -72,22 +71,20 @@ public class ProductController {
                     .orElseThrow(() -> new RuntimeException("Product not found"));
             return saveProductData(product, name, price, previousPrice, isAvailableStr, onPromotionStr, category, description, existingImagesJson, newImages);
         } catch (Exception e) {
-            e.printStackTrace();
             throw new RuntimeException("Update Failed: " + e.getMessage());
         }
     }
 
+    // THIS IS THE METHOD YOU ASKED ABOUT
     private Product saveProductData(Product product, String name, Double price, double prevPrice, String isAvail, String onPromo, String cat, String desc, String existJson, List<MultipartFile> files) throws Exception {
 
         List<String> finalImageList = new ArrayList<>();
 
-        // 1. Handle existing images string
         if (existJson != null && !existJson.isBlank() && !existJson.equals("[]") && !existJson.equals("null")) {
             List<String> existing = objectMapper.readValue(existJson, new TypeReference<List<String>>() {});
             finalImageList.addAll(existing);
         }
 
-        // 2. Upload new images one by one (Safer for database connections)
         if (files != null && !files.isEmpty()) {
             for (MultipartFile file : files) {
                 if (file != null && !file.isEmpty()) {
@@ -97,17 +94,23 @@ public class ProductController {
             }
         }
 
-        // 3. Map values to your Entity
         product.setName(name);
         product.setPrice(price);
         product.setPreviousPrice(prevPrice);
-        product.setAvailable(Boolean.parseBoolean(isAvail)); // Maps to your isAvailable
+        product.setAvailable(Boolean.parseBoolean(isAvail));
         product.setOnPromotion(Boolean.parseBoolean(onPromo));
         product.setCategory(cat);
         product.setDescription(desc);
-        product.setImages(finalImageList);
 
-        return productRepository.save(product);
+        // Sync the image list
+        if (product.getImages() == null) {
+            product.setImages(new ArrayList<>());
+        } else {
+            product.getImages().clear();
+        }
+        product.getImages().addAll(finalImageList);
+
+        return productRepository.saveAndFlush(product);
     }
 
     @DeleteMapping("/{id}")
