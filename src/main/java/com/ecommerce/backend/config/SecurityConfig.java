@@ -33,6 +33,8 @@ public class SecurityConfig {
                         // Always allow pre-flight OPTIONS requests
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
+                        .requestMatchers("/").permitAll()
+
                         // Allow public access for login/registration
                         .requestMatchers("/api/auth/**").permitAll()
 
