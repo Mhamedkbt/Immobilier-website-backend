@@ -33,23 +33,25 @@ public class SecurityConfig {
                         // Always allow pre-flight OPTIONS requests
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        .requestMatchers("/").permitAll()
+                        // 🎯 Explicitly permit GET for the root (Cron Job)
+                        .requestMatchers(HttpMethod.GET, "/").permitAll()
+                        .requestMatchers("/error").permitAll()
 
                         // Allow public access for login/registration
                         .requestMatchers("/api/auth/**").permitAll()
 
-                                // Public
-                                .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
-                                .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
-                                .requestMatchers(HttpMethod.POST, "/api/orders").permitAll()
-                                .requestMatchers("/uploads/**").permitAll()
+                        // Public
+                        .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/orders").permitAll()
+                        .requestMatchers("/uploads/**").permitAll()
 
-                                // Admin only
-                                .requestMatchers("/api/products/**").hasAuthority("ROLE_ADMIN")
-                                .requestMatchers("/api/categories/**").hasAuthority("ROLE_ADMIN")
-                                .requestMatchers("/api/orders/**").hasAuthority("ROLE_ADMIN")
+                        // Admin only
+                        .requestMatchers("/api/products/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers("/api/categories/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers("/api/orders/**").hasAuthority("ROLE_ADMIN")
 
-                                // Authenticate any other request not explicitly permitted above
+                        // Authenticate any other request not explicitly permitted above
                         .anyRequest().authenticated()
                 )
 
