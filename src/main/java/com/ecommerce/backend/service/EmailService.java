@@ -35,7 +35,7 @@ public class EmailService {
                             "       <p style='font-size: 18px; color: #059669;'><strong>Total Amount: " + totalAmount + " DH</strong></p>" +
                             "   </div>" +
                             "   <p style='text-align: center; margin-top: 30px;'>" +
-                            "       <a href='https://standard-ecommerce-frontend.onrender.com/dashboard' style='background-color: #4F46E5; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;'>Open Admin Panel</a>" +
+                            "       <a href='https://eccomstandard.vercel.app/dashboard' style='background-color: #4F46E5; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;'>Open Admin Panel</a>" +
                             "   </p>" +
                             "   <p style='font-size: 12px; color: #9ca3af; text-align: center; margin-top: 20px;'>Standard Ecommerce System</p>" +
                             "</div>";
