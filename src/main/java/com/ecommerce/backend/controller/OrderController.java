@@ -14,7 +14,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/orders")
 // Allow Vercel and local testing
-@CrossOrigin(origins = "${app.frontend-url}"
+@CrossOrigin(origins = "${app.frontend-url}")
 public class OrderController {
 
     @Autowired
