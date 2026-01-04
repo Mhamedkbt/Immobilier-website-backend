@@ -13,6 +13,8 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/orders")
+// Allow Vercel and local testing
+@CrossOrigin(origins = "${app.frontend-url}"
 public class OrderController {
 
     @Autowired
@@ -37,10 +39,15 @@ public class OrderController {
 
     @PostMapping
     public Order createOrder(@RequestBody Order order) {
-        // 1. Save to DB
+        // ✅ FIX: Add 1 hour to the date before saving
+        if (order.getDate() != null) {
+            order.setDate(order.getDate().plusHours(1));
+        }
+
+        // 1. Save to DB (Your original logic)
         Order savedOrder = orderRepository.save(order);
 
-        // 2. Async-like Email Logic (wrapped in try-catch)
+        // 2. Send Notification
         try {
             double totalAmount = 0;
             if (savedOrder.getProducts() != null) {
@@ -55,8 +62,8 @@ public class OrderController {
                     savedOrder.getId()
             );
         } catch (Exception e) {
-            // Log the error but return the order so the user doesn't get a 500 error
-            System.err.println("Notification Error: " + e.getMessage());
+            // Log but don't break the response
+            System.err.println("Email failed: " + e.getMessage());
         }
 
         return savedOrder;
