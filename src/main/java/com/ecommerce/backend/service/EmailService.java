@@ -2,6 +2,7 @@ package com.ecommerce.backend.service;
 
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
@@ -13,6 +14,12 @@ public class EmailService {
     @Autowired
     private JavaMailSender mailSender;
 
+    @Value("${spring.mail.from}")
+    private String fromEmail;
+
+    @Value("${admin.email.to}")
+    private String adminEmail;
+
     @Async
     public void sendOrderNotification(String customerName, double totalAmount, Long orderId) {
         // This log will appear in Render to show the thread started
@@ -23,8 +30,8 @@ public class EmailService {
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
             // Using your verified sender from the Brevo screenshot
-            helper.setFrom("mhameddev1@gmail.com");
-            helper.setTo("mhamedkbt@gmail.com");
+            helper.setFrom(fromEmail);
+            helper.setTo(adminEmail);
             helper.setSubject("📦 New Order Received! #" + orderId);
 
             String htmlContent =
